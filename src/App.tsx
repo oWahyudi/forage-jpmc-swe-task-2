@@ -15,6 +15,7 @@ interface IState {
  * It renders title, button and Graph react element.
  */
 class App extends Component<{}, IState> {
+  streamingInterval: NodeJS.Timeout | null =null;
   constructor(props: {}) {
     super(props);
 
@@ -23,6 +24,19 @@ class App extends Component<{}, IState> {
       // We use this state to parse data down to the child element (Graph) as element property
       data: [],
     };
+  }
+
+  startStreaming(){
+    this.streamingInterval= setInterval(()=> {
+      this.getDataFromServer();
+    },1000);
+  }
+
+  stopStreaming(){
+    if(this.streamingInterval){
+      clearInterval(this.streamingInterval);
+      this.streamingInterval=null;
+    }
   }
 
   /**
@@ -39,7 +53,13 @@ class App extends Component<{}, IState> {
     DataStreamer.getData((serverResponds: ServerRespond[]) => {
       // Update the state by creating a new array of data that consists of
       // Previous data in the state and the new data from server
-      this.setState({ data: [...this.state.data, ...serverResponds] });
+      // this.setState({ data: [...this.state.data, ...serverResponds] });
+      
+      //Onggo Wahyudi: 
+      //Eliminate any duplicates from the delta feed
+      //The internal table in Perspective stores the complete streaming dataset.            
+      let a=new Set([...serverResponds])
+      this.setState({ data: Array.from(a) });
     });
   }
 
@@ -59,7 +79,9 @@ class App extends Component<{}, IState> {
             // As part of your task, update the getDataFromServer() function
             // to keep requesting the data every 100ms until the app is closed
             // or the server does not return anymore data.
-            onClick={() => {this.getDataFromServer()}}>
+            // onClick={() => {this.getDataFromServer()}}
+            
+            onClick={()=> { this.startStreaming();}} >
             Start Streaming Data
           </button>
           <div className="Graph">
